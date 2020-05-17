@@ -1,50 +1,76 @@
-import numpy as np 
-import keras 
-from keras.datasets import mnist 
-from keras.models import Model 
-from keras.layers import Dense, Input
-from keras.layers import Conv2D, MaxPooling2D, Dropout, Flatten 
-from keras import backend as k 
+from keras.datasets import mnist
+from keras.models import Sequential
+from keras.layers import Dense
+from keras.utils import np_utils
+# load data
+(X_train, y_train), (X_test, y_test) = mnist.load_data()
+# flatten 28*28 images to a 784 vector for each image
+num_pixels = X_train.shape[1] * X_train.shape[2]
+X_train = X_train.reshape((X_train.shape[0], num_pixels)).astype('float32')
+X_test = X_test.reshape((X_test.shape[0], num_pixels)).astype('float32')
+# normalize inputs from 0-255 to 0-1
+X_train = X_train / 255
+X_test = X_test / 255
+# one hot encode outputs
+y_train = np_utils.to_categorical(y_train)
+y_test = np_utils.to_categorical(y_test)
+num_classes = y_test.shape[1]
+# define baseline model
+def baseline_model(neuron):
+	# create model
+	model = Sequential()
+	model.add(Dense(neuron, input_dim=num_pixels, kernel_initializer='normal', activation='relu'))
+	model.add(Dense(num_classes, kernel_initializer='normal', activation='softmax'))
+	# Compile model
+	model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+	return model
+# build the model
+neuron = 5
+model = baseline_model(neuron)
+
+accuracy = 0.0
+
+def buildModel():
+	# Fit the model
+	model.fit(X_train, y_train, validation_data=(X_test, y_test), epochs=5, batch_size=200, verbose=0)
+	# Final evaluation of the model
+	scores = model.evaluate(X_test, y_test, verbose=0)
+	accuracy = scores[1]*100
+	print("Accuracy: %.2f%%" % (scores[1]*100))
+	return accuracy
+
+buildModel()
+count = 0
+best_acc = accuracy
+best_neuron = 0
+
+def resetWeights():
+	print("Reseting weights")
+	w = model.get_weights()
+	w = [[j*0 for j in i] for i in w]
+	model.set_weights(w)
 
 
-img_rows, img_cols=28, 28
+while accuracy < 99 and count < 4:
+	print("Updating Model")
+	model = baseline_model(neuron*2)
+	neuron = neuron * 2
+	count = count + 1
+	accuracy = buildModel()
+	if best_acc < accuracy:
+		best_acc = accuracy
+		best_neuron = neuron
+	print()
+	resetWeights()
+ 
+print("***********")
+# resetWeights()
+print(best_neuron)
+model = baseline_model(best_neuron)
+buildModel()
+model.save('mnist_model_update.h5')
+print("Model Saved")
 
-if k.image_data_format() == 'channels_first': 
-  x_train = x_train.reshape(x_train.shape[0], 1, img_rows, img_cols) 
-  x_test = x_test.reshape(x_test.shape[0], 1, img_rows, img_cols) 
-  inpx = (1, img_rows, img_cols) 
-
-else: 
-  x_train = x_train.reshape(x_train.shape[0], img_rows, img_cols, 1) 
-  x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, 1) 
-  inpx = (img_rows, img_cols, 1) 
-
-x_train = x_train.astype('float32') 
-x_test = x_test.astype('float32') 
-x_train /= 255
-x_test /= 255
-
-y_train = keras.utils.to_categorical(y_train) 
-y_test = keras.utils.to_categorical(y_test) 
-
-
-inpx = Input(shape=inpx) 
-layer1 = Conv2D(32, kernel_size=(3, 3), activation='relu')(inpx) 
-layer2 = Conv2D(64, (3, 3), activation='relu')(layer1) 
-layer8 = MaxPooling2D(pool_size=(3, 3))(layer2)
-layer3 = MaxPooling2D(pool_size=(3, 3))(layer8)
-layer4 = Dropout(0.5)(layer3) 
-layer5 = Flatten()(layer4) 
-layer6 = Dense(250, activation='sigmoid')(layer5) 
-layer7 = Dense(10, activation='softmax')(layer6) 
-
-model = Model([inpx], layer7) 
-model.compile(optimizer=keras.optimizers.Adadelta(), 
-			loss=keras.losses.categorical_crossentropy, 
-			metrics=['accuracy']) 
-
-model.fit(x_train, y_train, epochs=8, batch_size=500) 
-
-score = model.evaluate(x_test, y_test, verbose=0) 
-print('loss=', score[0]) 
-print('accuracy=', score[1]) 
+file1 = open("result.txt","w")
+file1.write(str(best_acc))
+file1.close()
