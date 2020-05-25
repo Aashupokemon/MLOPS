@@ -1,5 +1,5 @@
 # MLOPS TASK -2
-![This is the Flow of Pipeline]()
+![This is the Flow of Pipeline](download.jpg)
 
 # Introduction
 
@@ -67,6 +67,8 @@ In job 5 we will retrain the updated  model and notify the developer using the e
 
 Step-8: Creating the Job 6 
 Job 6 will be triggered if the job 3 or job 5 fails due to any reason and this job will relaunch the container and  deploy the code and start training the model from where it left.
+
+![This is the Flow of Pipeline](screenshot(178).png)
 
 After completing all the steps we will get the perfect accuracy without any delay and running the code again and again manually.
 
